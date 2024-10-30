@@ -1,1 +1,4 @@
+aioresponses==0.7.6
 tensorflow[and-cuda]==2.17.0
+# to install on mac, comment out the above line and uncomment the below line
+# tensorflow-metal==1.1.0

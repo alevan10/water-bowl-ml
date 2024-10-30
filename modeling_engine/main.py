@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
@@ -22,6 +23,8 @@ from modeling_engine.utils.enums import (
     WATERBOWL_DATASET_ID,
 )
 from modeling_engine.utils.mongo import connect_to_mongo
+
+logger = logging.getLogger(__name__)
 
 
 async def prep_docker_environment() -> None:
@@ -52,9 +55,12 @@ async def generate_dataset_version() -> tuple[dr.Dataset, str]:
 async def train_model(
     dataset: dr.Dataset, dataset_version: str
 ) -> tuple[dr.Project, AsyncModel, dict[str, Any]]:
+    logger.debug("Training model")
     project: dr.Project = dr.Project.create_from_dataset(
         dataset.id, dataset_version, project_name=f"Waterbowl Project {datetime.now()}"
     )
+
+    logger.debug("New project ID: %s", project.id)
     project.analyze_and_model(
         "water_in_bowl", mode=dr.AUTOPILOT_MODE.FULL_AUTO, worker_count=-1
     )
@@ -62,6 +68,7 @@ async def train_model(
     top_model: AsyncModel = AsyncModel.get(
         project=project.id, model_id=project.recommended_model().id
     )
+    logger.debug("Top model ID: %s", project.id)
 
     model_file_name = f"model_{top_model.id}.mlpkg"
     model_information = {
@@ -74,7 +81,10 @@ async def train_model(
 async def get_production_model_id() -> str:
     async with ClientSession() as session:
         async with session.get(f"{PREDICTION_ENDPOINT}/modelId") as resp:
-            return await resp.json()["modelId"]
+            model_id_payload = await resp.json()
+            prod_model_id = model_id_payload.get("modelId")
+            logger.debug("Production model ID: %s", prod_model_id)
+            return prod_model_id
 
 
 def new_model_better_than_prod(prod_model: dict, new_model: dict) -> bool:
@@ -95,6 +105,8 @@ def new_model_better_than_prod(prod_model: dict, new_model: dict) -> bool:
                 new_better.append(metric)
             else:
                 prod_better.append(metric)
+            logger.debug("Validation diff: %s", validation_diff)
+            logger.debug("Cross validation diff: %s", cross_validation_diff)
         return len(new_better) > len(prod_better)
     return True
 
@@ -102,16 +114,22 @@ def new_model_better_than_prod(prod_model: dict, new_model: dict) -> bool:
 async def save_model_package_file(model: AsyncModel, filepath: str) -> Path:
     full_file_path = Path(MODEL_PACKAGE_STORAGE_LOCATION, filepath)
     await model.download_model_package_file(full_file_path)
+    logger.debug("Model package saved to %s", str(full_file_path))
     return full_file_path
 
 
 async def main():
     # Setup for the model training process
+    logger.info("Starting model training process")
     await prep_docker_environment()
+    logger.info("Generating dataset version")
     dataset, dataset_version = await generate_dataset_version()
+    logger.info("Generated dataset version")
+    logger.info("Training model")
     project, top_model, model_information = await train_model(dataset, dataset_version)
-
+    logger.info("Model trained")
     # Get production modelId from prediction API
+    logger.info("Getting production model ID")
     production_model_id = await get_production_model_id()
 
     # Generate artifact on model trained on new dataset
@@ -125,6 +143,7 @@ async def main():
             full_file_path = await save_model_package_file(
                 top_model, model_information["modelFileName"]
             )
+            logger.debug("Model package saved to %s", str(full_file_path))
             db["model_registry"].insert_one(model_information)
 
     # Clean up
