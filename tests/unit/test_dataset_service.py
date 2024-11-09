@@ -1,12 +1,13 @@
 import zipfile
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
 import pytest
-from tempfile import TemporaryDirectory
 from aioresponses import aioresponses
 
 from modeling_engine.modeling_service.dataset_service import DatasetRetriever
+
 
 @pytest.fixture
 def mock_aiohttp():
@@ -45,6 +46,7 @@ def mock_file_response(mock_aiohttp, test_dataset_zip_file):
         body=test_dataset_zip_file.read_bytes(),
         status=200,
     )
+
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("mock_file_response")

@@ -1,9 +1,9 @@
 import random
+from pathlib import Path
 from typing import Any
 
 import shortuuid
 import tensorflow as tf
-from pathlib import Path
 
 
 def manipulate_images(image: tf.Tensor) -> list[tf.Tensor]:
@@ -33,7 +33,7 @@ def manipulate_images(image: tf.Tensor) -> list[tf.Tensor]:
 
 
 def save_images(
-        directory: Path, filename_prefix: str, images: list[tf.Tensor]
+    directory: Path, filename_prefix: str, images: list[tf.Tensor]
 ) -> list[Path]:
     saved_images = []
     for image in images:

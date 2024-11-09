@@ -2,6 +2,7 @@ from unittest import mock
 
 import pytest
 import tensorflow as tf
+
 from modeling_engine.modeling_service.utils.pictures import manipulate_images
 
 
@@ -16,6 +17,7 @@ def test_tensor(test_picture):
     water_image = tf.image.decode_jpeg(raw_jpeg)
     yield water_image
 
+
 @pytest.fixture
 def expected_tensors(test_data_dir, test_picture):
     tensors_file = test_data_dir.joinpath("waterbowl_tensors.csv")
@@ -24,7 +26,8 @@ def expected_tensors(test_data_dir, test_picture):
         water_image = tf.image.decode_jpeg(raw_jpeg)
         water_training_images = manipulate_images(water_image)
         type_tensor = tf.constant(
-            [str(tensor.dtype)[9:-2] for tensor in water_training_images])  # figures out the dtypes by itself
+            [str(tensor.dtype)[9:-2] for tensor in water_training_images]
+        )  # figures out the dtypes by itself
         serialized_tensor = tf.io.serialize_tensor(type_tensor)
         with tf.io.TFRecordWriter(str(tensors_file)) as writer:
             writer.write(serialized_tensor.numpy())
@@ -48,8 +51,11 @@ def expected_tensors(test_data_dir, test_picture):
             ret.append(tf.io.parse_tensor(record, type_list[i % (num_tensors + 1)]))
     yield ret
 
+
 def test_manipulate_images(test_tensor, expected_tensors):
-    with mock.patch("modeling_engine.modeling_service.utils.pictures.tf.image.adjust_brightness") as mock_brightness:
+    with mock.patch(
+        "modeling_engine.modeling_service.utils.pictures.tf.image.adjust_brightness"
+    ) as mock_brightness:
         mock_brightness.return_value = lambda x, y: x
         images = manipulate_images(test_tensor)
         for expected, test in zip(expected_tensors, images):
