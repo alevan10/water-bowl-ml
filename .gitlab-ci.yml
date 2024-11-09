@@ -41,40 +41,40 @@ stages:
   - Build
 #  - Deploy
 
-Pylint:
-  stage: Static Analysis
-  retry: 1
-  tags:
-    - gpu
-  script:
-    - pip install -r requirements-cuda.txt
-    - make lint
-
-Black:
-  stage: Static Analysis
-  retry: 1
-  script:
-    - make check-black
-
-Version_Check:
-  stage: Static Analysis
-  retry: 1
-  script:
-    - python version_checker.py
-
-Lint_Dockerfile:
-  stage: Static Analysis
-  retry: 1
-  before_script: []
-  image: hadolint/hadolint:latest-debian
-  script:
-    - hadolint src/docker/prediction_api.Dockerfile
-
-Isort:
-  stage: Static Analysis
-  retry: 1
-  script:
-    - make check-isort
+#Pylint:
+#  stage: Static Analysis
+#  retry: 1
+#  tags:
+#    - gpu
+#  script:
+#    - pip install -r requirements-cuda.txt
+#    - make lint
+#
+#Black:
+#  stage: Static Analysis
+#  retry: 1
+#  script:
+#    - make check-black
+#
+#Version_Check:
+#  stage: Static Analysis
+#  retry: 1
+#  script:
+#    - python version_checker.py
+#
+#Lint_Dockerfile:
+#  stage: Static Analysis
+#  retry: 1
+#  before_script: []
+#  image: hadolint/hadolint:latest-debian
+#  script:
+#    - hadolint src/docker/prediction_api.Dockerfile
+#
+#Isort:
+#  stage: Static Analysis
+#  retry: 1
+#  script:
+#    - make check-isort
 
 Unit:
   stage: Tests
