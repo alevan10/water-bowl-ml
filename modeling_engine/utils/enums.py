@@ -2,7 +2,7 @@ import os
 from enum import StrEnum
 from pathlib import Path
 
-PREDICTION_ENDPOINT = os.environ.get("PREDICTION_ENDPOINT", "http://localhost:8080/")
+PREDICTION_ENDPOINT = os.environ.get("PREDICTION_ENDPOINT", "http://localhost:8082/")
 DATASET_ENDPOINT = os.environ.get("DATASET_ENDPOINT", "http://localhost:8000/")
 
 ROOT_DIR = Path(__file__).parent.parent.parent
