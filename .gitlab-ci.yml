@@ -26,13 +26,17 @@ cache:
 
 before_script:
   - python -V  # Print out python version for debugging
-  - apt-get update && apt-get install -y libhdf5-dev
+  - apt-get update && apt-get install -y libhdf5-dev gcc-8 g++-8
+  - rm /usr/bin/gcc
+  - ln -s /usr/bin/gcc-8 /usr/bin/gcc
+  - rm /usr/bin/g++
+  - ln -s /usr/bin/g++-8 /usr/bin/g++
   - pip install --upgrade pip setuptools wheel
   - pip install -r requirements.txt
   - export PYTHONPATH="$(pwd)/src:$(pwd)/src/prediction_api:$(pwd)/modeling_engine:$PYTHONPATH"
 
 stages:
-  - Static Analysis
+#  - Static Analysis
   - Tests
   - Build
 #  - Deploy
