@@ -78,6 +78,8 @@ Unit:
   tags:
     - gpu
   script:
+    - apt-get update
+    - apt-get install cuda-toolkit
     - pip install -r requirements-cuda.txt
     - nvidia-smi
     - pytest -v ./tests/unit
