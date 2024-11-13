@@ -1,4 +1,4 @@
-FROM levan.home:5000/datarobot/datarobot/datarobot-portable-prediction-api:latest
+FROM levan.home:5000/datarobot/datarobot-portable-prediction-api:latest
 ARG MODEL_PACKAGE
 USER root
 COPY $MODEL_PACKAGE /opt/ml/model/model.mlpkg
