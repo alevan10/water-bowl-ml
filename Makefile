@@ -1,4 +1,4 @@
-.PHONY: start-postgres stop-postgres black lint isort run-local stop-local push-prod check-isort check-black
+.PHONY: start-postgres stop-postgres black lint isort run-local stop-local push-prod check-isort check-black dev
 POSTGRES_PASSWORD ?= postgres
 POSTGRES_USER ?= postgres
 start-postgres:
@@ -6,6 +6,9 @@ start-postgres:
 
 stop-postgres:
 	docker compose down
+
+dev:
+	pip install -r requirements.txt -r requirements-cuda.txt
 
 black:
 	python -m black .

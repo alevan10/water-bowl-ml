@@ -4,14 +4,13 @@ import zipfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, Optional
+from typing import Optional
 
 import aiofiles
 import pandas as pd
-import shortuuid
-import tensorflow as tf
 from aiohttp import ClientResponse, ClientSession
 
+from modeling_engine.modeling_service.utils.pictures import create_training_pictures
 from modeling_engine.utils.enums import DATASET_ENDPOINT, PictureType
 
 
@@ -49,71 +48,6 @@ class DatasetRetriever:
                 await zip_file.write(await resp.read())
         return pictures_collection
 
-    def _manipulate_images(self, image: tf.Tensor) -> list[tf.Tensor]:
-        inverted_image = tf.image.flip_left_right(image)
-        rotated_1 = tf.image.rot90(image)
-        rotated_2 = tf.image.rot90(rotated_1)
-        rotated_3 = tf.image.rot90(rotated_2)
-        inv_rotated_1 = tf.image.rot90(inverted_image)
-        inv_rotated_2 = tf.image.rot90(inv_rotated_1)
-        inv_rotated_3 = tf.image.rot90(inv_rotated_2)
-        images_list = [
-            image,
-            rotated_1,
-            rotated_2,
-            rotated_3,
-            inverted_image,
-            inv_rotated_1,
-            inv_rotated_2,
-            inv_rotated_3,
-        ]
-        modified_images = []
-        for image in images_list:
-            random_adjustment = random.randrange(30, 60)
-            random_adjustment = (random_adjustment * -1) / 100
-            modified_images.append(tf.image.adjust_brightness(image, random_adjustment))
-        return images_list
-
-    def _save_images(
-        self, directory: Path, filename_prefix: str, images: list[tf.Tensor]
-    ) -> list[Path]:
-        saved_images = []
-        for image in images:
-            filename = f"{filename_prefix}_{shortuuid.uuid()}.jpeg"
-            output_file = directory.joinpath(filename)
-            saved_images.append(output_file)
-            new_jpg = tf.image.encode_jpeg(image, format="grayscale", quality=100)
-            tf.io.write_file(filename=str(output_file), contents=new_jpg)
-        return saved_images
-
-    def _create_training_pictures(
-        self,
-        raw_picture_path: Path,
-        directory: Path,
-        picture_data: list[dict[str, Any]],
-    ) -> list[dict[str, Any]]:
-        raw_jpeg = tf.io.read_file(str(raw_picture_path))
-        water_image = tf.image.decode_jpeg(raw_jpeg)
-        water_training_images = self._manipulate_images(water_image)
-        saved_images = self._save_images(directory, "water", water_training_images)
-        image_data = next(
-            data
-            for data in picture_data
-            if raw_picture_path.name in data["waterbowl_picture"]
-        )
-        base_data = {
-            "water_in_bowl": image_data["water_in_bowl"],
-            "cat_at_bowl": image_data["cat_at_bowl"],
-        }
-        updated_image_data = []
-        for image in saved_images:
-            image_data = {
-                **base_data,
-                "filename": f"{raw_picture_path.parent.name}/{image.name}",
-            }
-            updated_image_data.append(image_data)
-        return updated_image_data
-
     @asynccontextmanager
     async def generate_training_dataset(
         self,
@@ -141,7 +75,7 @@ class DatasetRetriever:
                     class_path = tmp_path.joinpath(directory.name)
                     class_path.mkdir()
                     for file in directory.glob("*.jpeg"):
-                        updated_rows = self._create_training_pictures(
+                        updated_rows = create_training_pictures(
                             file, class_path, picture_data
                         )
                         updated_picture_data.extend(updated_rows)

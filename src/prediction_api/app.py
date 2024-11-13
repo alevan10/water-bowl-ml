@@ -1,9 +1,8 @@
 import os
 
+from blueprint import prediction_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from prediction_api.blueprint import prediction_router
 
 default_origins = [
     "http://levan.home",

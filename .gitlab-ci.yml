@@ -33,8 +33,8 @@ before_script:
 
 stages:
   - Static Analysis
-#  - Tests
-#  - Build
+  - Tests
+  - Build
 #  - Deploy
 
 Pylint:
@@ -44,6 +44,7 @@ Pylint:
     - gpu
   script:
     - pip install -r requirements-cuda.txt
+    - nvidia-smi
     - make lint
 
 Black:
@@ -72,13 +73,17 @@ Isort:
   script:
     - make check-isort
 
-#Unit:
-#  stage: Tests
-#  retry: 1
-#  script:
-#    - pytest -v ./tests/unit
-#
-#
+Unit:
+  stage: Tests
+  retry: 1
+  tags:
+    - gpu
+  script:
+    - pip install -r requirements-cuda.txt
+    - nvidia-smi
+    - pytest -v ./tests/unit
+
+
 #Integration:
 #  stage: Tests
 #  retry: 1
@@ -93,44 +98,44 @@ Isort:
 #  script:
 #    - pytest -v ./tests/integration
 
-#Build:
-#  stage: Build
-#  retry: 1
-#  only:
-#    - main
-#  image:
-#    name: gcr.io/kaniko-project/executor:debug
-#    entrypoint: [""]
-#  before_script: []
-#  script:
-#    - WATER_BOWL_API_VERSION=$(cat VERSION)
-#    - mkdir -p /kaniko/.docker
-#    - >-
-#      /kaniko/executor
-#      --insecure
-#      --skip-tls-verify
-#      --context "${CI_PROJECT_DIR}"
-#      --dockerfile "${CI_PROJECT_DIR}/src/docker/Dockerfile"
-#      --destination "levan.home:5000/water-bowl-api:${WATER_BOWL_API_VERSION}"
-#
-#Build-Latest:
-#  stage: Build
-#  retry: 1
-#  only:
-#    - main
-#  image:
-#    name: gcr.io/kaniko-project/executor:debug
-#    entrypoint: [""]
-#  before_script: []
-#  script:
-#    - mkdir -p /kaniko/.docker
-#    - >-
-#      /kaniko/executor
-#      --insecure
-#      --skip-tls-verify
-#      --context "${CI_PROJECT_DIR}"
-#      --dockerfile "${CI_PROJECT_DIR}/src/docker/Dockerfile"
-#      --destination "levan.home:5000/water-bowl-api:latest"
+Build:
+  stage: Build
+  retry: 1
+  only:
+    - main
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script: []
+  script:
+    - PREDICTION_API_VERSION=$(cat VERSION)
+    - mkdir -p /kaniko/.docker
+    - >-
+      /kaniko/executor
+      --insecure
+      --skip-tls-verify
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
+      --destination "levan.home:5000/waterbowl/prediction-api:${PREDICTION_API_VERSION}"
+
+Build-Latest:
+  stage: Build
+  retry: 1
+  only:
+    - main
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script: []
+  script:
+    - mkdir -p /kaniko/.docker
+    - >-
+      /kaniko/executor
+      --insecure
+      --skip-tls-verify
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
+      --destination "levan.home:5000/waterbowl/prediction-api:latest"
 #
 #Deploy:
 #  stage: Deploy
