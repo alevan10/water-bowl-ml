@@ -13,14 +13,10 @@ api:
 
 prediction:
   image:
-    repository: levan.home:5000/datarobot/datarobot/datarobot-portable-prediction-api
+    repository: levan.home:5000/waterbowl/prediction-server
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: "latest"
-  volumeMounts:
-   - name: model
-     mountPath: /opt/ml/model/model.mlpkg
-     readOnly: true
   environment:
     PREDICTION_API_MODEL_REPOSITORY_PATH: "/opt/ml/model/model.mlpkg"
 
@@ -58,16 +54,18 @@ service:
   port: 80
 
 ingress:
-  enabled: false
+  enabled: true
   className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: waterbowl-prediction-api-prediction-api-middleware@kubernetescrd
+    traefik.ingress.kubernetes.io/cors-allow-methods: GET,POST
   hosts:
     - host: levan.home
       paths:
-        - path: /
+        - path: /api/waterbowl/v1/predictions
           pathType: ImplementationSpecific
+  middleware:
+    prefix: "/api/waterbowl/v1/predictions"
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
@@ -93,11 +91,7 @@ autoscaling:
   # targetMemoryUtilizationPercentage: 80
 
 # Additional volumes on the output Deployment definition.
-volumes:
-  - name: model
-    secret:
-      secretName: waterbowl-model
-      optional: false
+volumes: []
 
 # Additional volumeMounts on the output Deployment definition.
 volumeMounts: []
@@ -105,7 +99,9 @@ volumeMounts: []
 #   mountPath: "/etc/foo"
 #   readOnly: true
 
-nodeSelector: {}
+nodeSelector:
+  beta.kubernetes.io/arch: arm64
+  kubernetes.io/arch: arm64
 
 tolerations: []
 
