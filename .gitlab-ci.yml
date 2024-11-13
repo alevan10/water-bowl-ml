@@ -134,7 +134,7 @@ Build-Latest:
       --insecure
       --skip-tls-verify
       --context "${CI_PROJECT_DIR}"
-      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
+      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-api:latest"
 #
 #Deploy:
