@@ -146,36 +146,6 @@ Build-x64:
       --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
       --cleanup
 
-Build-ARM64:
-  stage: Build
-  retry: 1
-  tags:
-    - arm
-  only:
-    - main
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
-  before_script: []
-  script:
-    - PREDICTION_API_VERSION=$(cat API_VERSION)
-    - mkdir -p /kaniko/.docker
-    - >-
-      /kaniko/executor
-      --insecure-registry levan.home:5000
-      --context "${CI_PROJECT_DIR}"
-      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
-      --destination "levan.home:5000/waterbowl/prediction-api:${PREDICTION_API_VERSION}"
-      --cleanup
-    - >-
-      /kaniko/executor
-      --insecure-registry levan.home:5000
-      --context "${CI_PROJECT_DIR}"
-      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
-      --destination "levan.home:5000/waterbowl/prediction-api:latest"
-      --cleanup
-
-
 Deploy:
   stage: Deploy
   retry: 1
@@ -187,4 +157,4 @@ Deploy:
     - PREDICTION_API_VERSION=$(cat API_VERSION)
     - PREDICTION_SERVER_VERSION=$(cat SERVER_VERSION)
     - PRODUCTION_MODEL_ID=$(cat MODEL_PACKAGE | sed -E 's/model_([^\.]*).mlpkg|$/\1/')
-    - helm upgrade --install water-bowl-api ./water-bowl-api --values=./water-bowl-api/values.yaml --namespace waterbowl --create-namespace --set api.image.tag=${PREDICTION_API_VERSION} --set prediction.image.tag=${PREDICTION_SERVER_VERSION} --set api.environment[0].value=${PRODUCTION_MODEL_ID}
+    - helm upgrade --install water-bowl-predictions ./prediction-api --values=./prediction-api/values.yaml --namespace waterbowl --create-namespace --set api.image.tag=${PREDICTION_API_VERSION} --set prediction.image.tag=${PREDICTION_SERVER_VERSION} --set "api.environment[0].value=${PRODUCTION_MODEL_ID}"
