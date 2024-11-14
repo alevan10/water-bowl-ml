@@ -3,8 +3,9 @@ import os
 
 import aiohttp
 from fastapi import APIRouter
-from utils.enums import PRODUCTION_MODEL_ID
 from werkzeug.exceptions import NotFound
+
+from utils.enums import PRODUCTION_MODEL_ID
 
 prediction_router = APIRouter()
 

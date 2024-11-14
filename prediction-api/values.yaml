@@ -10,6 +10,9 @@ api:
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: "latest"
+  environment:
+    - name: PRODUCTION_MODEL_ID
+      value: "squak-squak"
 
 prediction:
   image:
@@ -18,7 +21,8 @@ prediction:
     # Overrides the image tag whose default is the chart appVersion.
     tag: "latest"
   environment:
-    PREDICTION_API_MODEL_REPOSITORY_PATH: "/opt/ml/model/model.mlpkg"
+    - name: PREDICTION_API_MODEL_REPOSITORY_PATH
+      value: "/opt/ml/model/model.mlpkg"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -100,8 +104,8 @@ volumeMounts: []
 #   readOnly: true
 
 nodeSelector:
-  beta.kubernetes.io/arch: arm64
-  kubernetes.io/arch: arm64
+  beta.kubernetes.io/arch: amd64
+  kubernetes.io/arch: amd64
 
 tolerations: []
 

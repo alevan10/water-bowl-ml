@@ -16,8 +16,8 @@ spec:
   stripPrefix:
     prefixes:
       - {{ .Values.ingress.middleware.prefix }}
+{{- end }}
 ---
-
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "prediction-api.fullname" . -}}
 {{- $svcPort := .Values.service.port -}}

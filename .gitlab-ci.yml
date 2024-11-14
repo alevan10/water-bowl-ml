@@ -158,18 +158,8 @@ Build-ARM64:
     entrypoint: [""]
   before_script: []
   script:
-    - MODEL_PACKAGE=$(cat MODEL_PACKAGE)
     - PREDICTION_API_VERSION=$(cat API_VERSION)
-    - PREDICTION_SERVER_VERSION=$(cat SERVER_VERSION)
     - mkdir -p /kaniko/.docker
-    - >-
-      /kaniko/executor
-      --insecure-registry levan.home:5000
-      --context "${CI_PROJECT_DIR}"
-      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
-      --destination "levan.home:5000/waterbowl/prediction-server:${PREDICTION_SERVER_VERSION}"
-      --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
-      --cleanup
     - >-
       /kaniko/executor
       --insecure-registry levan.home:5000
@@ -181,26 +171,20 @@ Build-ARM64:
       /kaniko/executor
       --insecure-registry levan.home:5000
       --context "${CI_PROJECT_DIR}"
-      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
-      --destination "levan.home:5000/waterbowl/prediction-server:latest"
-      --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
-      --cleanup
-    - >-
-      /kaniko/executor
-      --insecure-registry levan.home:5000
-      --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-api:latest"
       --cleanup
 
-#
-#Deploy:
-#  stage: Deploy
-#  retry: 1
-#  only:
-#    - main
-#  image: alpine/helm:3.10.2
-#  before_script: []
-#  script:
-#    - WATER_BOWL_API_VERSION=$(cat API_VERSION)
-#    - helm upgrade --install water-bowl-api ./water-bowl-api --values=./water-bowl-api/values.yaml --namespace waterbowl --create-namespace --set image.tag=${WATER_BOWL_API_VERSION}
+
+Deploy:
+  stage: Deploy
+  retry: 1
+  only:
+    - main
+  image: alpine/helm:3.10.2
+  before_script: []
+  script:
+    - PREDICTION_API_VERSION=$(cat API_VERSION)
+    - PREDICTION_SERVER_VERSION=$(cat SERVER_VERSION)
+    - PRODUCTION_MODEL_ID=$(cat MODEL_PACKAGE | sed -E 's/model_([^\.]*).mlpkg|$/\1/')
+    - helm upgrade --install water-bowl-api ./water-bowl-api --values=./water-bowl-api/values.yaml --namespace waterbowl --create-namespace --set api.image.tag=${PREDICTION_API_VERSION} --set prediction.image.tag=${PREDICTION_SERVER_VERSION} --set api.environment[0].value=${PRODUCTION_MODEL_ID}
