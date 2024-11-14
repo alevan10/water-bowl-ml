@@ -98,9 +98,11 @@ Unit:
 #  script:
 #    - pytest -v ./tests/integration
 
-Build-API:
+Build-API-ARM64:
   stage: Build
   retry: 1
+  tags:
+    - arm
   only:
     - main
   image:
@@ -119,19 +121,34 @@ Build-API:
       --destination "levan.home:5000/waterbowl/prediction-api:${PREDICTION_API_VERSION}"
       --custom-platform=linux/arm64
       --cleanup
+
+Build-API-x64:
+  stage: Build
+  retry: 1
+  tags:
+    - x64
+  only:
+    - main
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script: []
+  script:
+    - PREDICTION_API_VERSION=$(cat VERSION)
+    - mkdir -p /kaniko/.docker
     - >-
       /kaniko/executor
-      --insecure
-      --skip-tls-verify
+      --insecure-registry levan.home:5000
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-api:${PREDICTION_API_VERSION}"
-      --custom-platform=linux/amd64
       --cleanup
 
-Build-API-Latest:
+Build-API-Latest-ARM64:
   stage: Build
   retry: 1
+  tags:
+    - arm
   only:
     - main
   image:
@@ -147,22 +164,35 @@ Build-API-Latest:
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-api:latest"
-      --custom-platform=linux/arm64
       --cleanup
+
+Build-API-Latest-x64:
+  stage: Build
+  retry: 1
+  tags:
+    - x64
+  only:
+    - main
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script: []
+  script:
+    - mkdir -p /kaniko/.docker
     - >-
       /kaniko/executor
-      --insecure
-      --skip-tls-verify
+      --insecure-registry levan.home:5000
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-api:latest"
-      --custom-platform=linux/amd64
       --cleanup
 
 
-Build-Server:
+Build-Server-ARM64:
   stage: Build
   retry: 1
+  tags:
+    - arm
   only:
     - main
   image:
@@ -175,30 +205,42 @@ Build-Server:
     - mkdir -p /kaniko/.docker
     - >-
       /kaniko/executor
-      --insecure
-      --insecure-pull
-      --skip-tls-verify
+      --insecure-registry levan.home:5000
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-server:${PREDICTION_API_VERSION}"
       --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
-      --custom-platform=linux/arm64
-      --cleanup
-    - >-
-      /kaniko/executor
-      --insecure
-      --insecure-pull
-      --skip-tls-verify
-      --context "${CI_PROJECT_DIR}"
-      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
-      --destination "levan.home:5000/waterbowl/prediction-server:${PREDICTION_API_VERSION}"
-      --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
-      --custom-platform=linux/amd64
       --cleanup
 
-Build-Server-Latest:
+Build-Server-x64:
   stage: Build
   retry: 1
+  tags:
+    - x64
+  only:
+    - main
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script: []
+  script:
+    - MODEL_PACKAGE=$(cat MODEL_PACKAGE)
+    - PREDICTION_API_VERSION=$(cat VERSION)
+    - mkdir -p /kaniko/.docker
+    - >-
+      /kaniko/executor
+      --insecure-registry levan.home:5000
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
+      --destination "levan.home:5000/waterbowl/prediction-server:${PREDICTION_API_VERSION}"
+      --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
+      --cleanup
+
+Build-Server-Latest-ARM64:
+  stage: Build
+  retry: 1
+  tags:
+    - arm
   only:
     - main
   image:
@@ -210,25 +252,34 @@ Build-Server-Latest:
     - mkdir -p /kaniko/.docker
     - >-
       /kaniko/executor
-      --insecure
-      --insecure-pull
-      --skip-tls-verify
+      --insecure-registry levan.home:5000
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-server:latest"
       --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
-      --custom-platform=linux/arm64
       --cleanup
+
+Build-Server-Latest-x64:
+  stage: Build
+  retry: 1
+  tags:
+    - x64
+  only:
+    - main
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script: []
+  script:
+    - MODEL_PACKAGE=$(cat MODEL_PACKAGE)
+    - mkdir -p /kaniko/.docker
     - >-
       /kaniko/executor
-      --insecure
-      --insecure-pull
-      --skip-tls-verify
+      --insecure-registry levan.home:5000
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-server:latest"
       --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
-      --custom-platform=linux/amd64
       --cleanup
 
 #
