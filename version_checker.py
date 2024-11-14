@@ -6,7 +6,7 @@ from pathlib import Path
 import aiohttp
 import click
 
-version_file = Path(__file__).parent.joinpath("VERSION")
+version_file = Path(__file__).parent.joinpath("API_VERSION")
 
 
 def get_version() -> tuple[int, int, int]:
@@ -79,7 +79,7 @@ async def check_version(
         patch = patch + 1 if bump_patch else patch
         new_version_str = make_version_string(major, minor, patch)
         if new_version_str in available_versions:
-            click.echo("Version already exists, please update the VERSION file.")
+            click.echo("Version already exists, please update the API_VERSION file.")
             sys.exit(2)
         with open(version_file, "w") as version:
             click.echo(f"Version bumped from {version_str} to {new_version_str}.")
