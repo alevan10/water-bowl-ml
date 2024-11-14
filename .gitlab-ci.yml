@@ -121,7 +121,6 @@ Build-x64:
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-api:${PREDICTION_API_VERSION}"
-      --custom-platform=linux/arm64
       --cleanup
     - >-
       /kaniko/executor
