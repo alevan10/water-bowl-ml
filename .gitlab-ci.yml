@@ -35,7 +35,7 @@ stages:
   - Static Analysis
   - Tests
   - Build
-#  - Deploy
+  - Deploy
 
 Pylint:
   stage: Static Analysis
