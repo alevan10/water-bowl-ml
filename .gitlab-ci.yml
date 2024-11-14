@@ -117,7 +117,17 @@ Build-API:
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-api:${PREDICTION_API_VERSION}"
-      --platform=linux/arm64,linux/amd64
+      --custom-platform=linux/arm64
+      --cleanup
+    - >-
+      /kaniko/executor
+      --insecure
+      --skip-tls-verify
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
+      --destination "levan.home:5000/waterbowl/prediction-api:${PREDICTION_API_VERSION}"
+      --custom-platform=linux/amd64
+      --cleanup
 
 Build-API-Latest:
   stage: Build
@@ -137,7 +147,17 @@ Build-API-Latest:
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-api:latest"
-      --platform=linux/arm64,linux/amd64
+      --custom-platform=linux/arm64
+      --cleanup
+    - >-
+      /kaniko/executor
+      --insecure
+      --skip-tls-verify
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
+      --destination "levan.home:5000/waterbowl/prediction-api:latest"
+      --custom-platform=linux/amd64
+      --cleanup
 
 
 Build-Server:
@@ -162,7 +182,19 @@ Build-Server:
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-server:${PREDICTION_API_VERSION}"
       --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
-      --platform=linux/arm64,linux/amd64
+      --custom-platform=linux/arm64
+      --cleanup
+    - >-
+      /kaniko/executor
+      --insecure
+      --insecure-pull
+      --skip-tls-verify
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
+      --destination "levan.home:5000/waterbowl/prediction-server:${PREDICTION_API_VERSION}"
+      --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
+      --custom-platform=linux/amd64
+      --cleanup
 
 Build-Server-Latest:
   stage: Build
@@ -185,7 +217,19 @@ Build-Server-Latest:
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
       --destination "levan.home:5000/waterbowl/prediction-server:latest"
       --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
-      --platform=linux/arm64,linux/amd64
+      --custom-platform=linux/arm64
+      --cleanup
+    - >-
+      /kaniko/executor
+      --insecure
+      --insecure-pull
+      --skip-tls-verify
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
+      --destination "levan.home:5000/waterbowl/prediction-server:latest"
+      --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
+      --custom-platform=linux/amd64
+      --cleanup
 
 #
 #Deploy:
