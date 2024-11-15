@@ -41,14 +41,6 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
-          livenessProbe:
-              httpGet:
-                path: /info
-                port: http
-          readinessProbe:
-            httpGet:
-              path: /info
-              port: http
           {{- with .Values.prediction.environment }}
           env:
             {{- toYaml . | nindent 12 }}
@@ -70,11 +62,11 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /
+              path: /model
               port: http
           readinessProbe:
             httpGet:
-              path: /
+              path: /model
               port: http
           {{- with .Values.api.environment }}
           env:
