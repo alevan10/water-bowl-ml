@@ -69,7 +69,7 @@ async def check_version(
         sys.exit(0)
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            "http://levan.home:5000/v2/water-bowl-prediction/tags/list"
+            "http://levan.home:5000/v2/waterbowl/prediction-api/tags/list"
         ) as resp:
             resp_json = await resp.json()
             available_versions = resp_json.get("tags", [])
