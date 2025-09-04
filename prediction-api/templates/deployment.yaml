@@ -38,9 +38,17 @@ spec:
           image: "{{ .Values.prediction.image.repository }}:{{ .Values.prediction.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.prediction.image.pullPolicy }}
           ports:
-            - name: http
+            - name: predictions
               containerPort: 8080
               protocol: TCP
+          livenessProbe:
+              httpGet:
+                path: /info
+                port: predictions
+          readinessProbe:
+            httpGet:
+              path: /info
+              port: predictions
           {{- with .Values.prediction.environment }}
           env:
             {{- toYaml . | nindent 12 }}
@@ -62,11 +70,11 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /model
+              path: /health
               port: http
           readinessProbe:
             httpGet:
-              path: /model
+              path: /health
               port: http
           {{- with .Values.api.environment }}
           env:

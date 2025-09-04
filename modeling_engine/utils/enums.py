@@ -14,7 +14,7 @@ MODELS_COLLECTION = Path(os.environ.get("MODELS_DIR", "test_models"))
 
 DATAROBOT_API_TOKEN = os.environ.get(
     "DATAROBOT_API_TOKEN",
-    "NjVkYTBiMzFmNzQ5NTVjMTA4NTM4ZmZhOnVyOUh4VGtvSWlkNmt4RWY4UUkySjhVOVNCY00vWENqREs4Vi9oelUzeHc9",
+    "",
 )
 DATAROBOT_API_ENDPOINT = os.environ.get(
     "DATAROBOT_API_ENDPOINT", "https://app.datarobot.com/api/v2"

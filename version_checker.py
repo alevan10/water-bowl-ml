@@ -6,10 +6,11 @@ from pathlib import Path
 import aiohttp
 import click
 
-version_file = Path(__file__).parent.joinpath("API_VERSION")
+api_version_file = Path(__file__).parent.joinpath("API_VERSION")
+server_version_file = Path(__file__).parent.joinpath("SERVER_VERSION")
 
 
-def get_version() -> tuple[int, int, int]:
+def get_version(version_file: Path) -> tuple[int, int, int]:
     with open(version_file, "r") as version:
         version_str = version.readline()
         version.flush()
@@ -62,31 +63,63 @@ def coro(f):
 async def check_version(
     return_version: bool, bump_patch: bool, bump_minor: bool, bump_major: bool
 ):
-    major, minor, patch = get_version()
-    version_str = make_version_string(major, minor, patch)
+    api_version_str = make_version_string(*get_version(api_version_file))
+    server_version_str = make_version_string(*get_version(server_version_file))
     if return_version:
-        click.echo(version_str)
+        click.echo(f"API version: {api_version_str}")
+        click.echo(f"Server version: {server_version_str}")
         sys.exit(0)
     async with aiohttp.ClientSession() as session:
         async with session.get(
             "http://levan.home:5000/v2/waterbowl/prediction-api/tags/list"
         ) as resp:
             resp_json = await resp.json()
-            available_versions = resp_json.get("tags", [])
-    if version_str in available_versions:
+            available_api_versions = resp_json.get("tags", [])
+        async with session.get(
+            "http://levan.home:5000/v2/waterbowl/prediction-server/tags/list"
+        ) as resp:
+            resp_json = await resp.json()
+            available_server_versions = resp_json.get("tags", [])
+    errors = []
+    if api_version_str in available_api_versions:
+        major, minor, patch = get_version(api_version_file)
         major = major + 1 if bump_major else major
         minor = minor + 1 if bump_minor else minor
         patch = patch + 1 if bump_patch else patch
         new_version_str = make_version_string(major, minor, patch)
-        if new_version_str in available_versions:
-            click.echo("Version already exists, please update the API_VERSION file.")
-            sys.exit(2)
-        with open(version_file, "w") as version:
-            click.echo(f"Version bumped from {version_str} to {new_version_str}.")
-            version.write(new_version_str)
-            version.flush()
-            sys.exit(1)
-    click.echo("Version ok.")
+        if new_version_str in available_api_versions:
+            errors.append("Version already exists, please update the API_VERSION file.")
+        else:
+            with open(api_version_file, "w") as version:
+                click.echo(
+                    f"Version bumped from {api_version_str} to {new_version_str}."
+                )
+                version.write(new_version_str)
+                version.flush()
+                sys.exit(1)
+    if server_version_str in available_server_versions:
+        major, minor, patch = get_version(server_version_file)
+        major = major + 1 if bump_major else major
+        minor = minor + 1 if bump_minor else minor
+        patch = patch + 1 if bump_patch else patch
+        new_version_str = make_version_string(major, minor, patch)
+        if new_version_str in available_server_versions:
+            errors.append(
+                "Version already exists, please update the SERVER_VERSION file."
+            )
+        else:
+            with open(server_version_file, "w") as version:
+                click.echo(
+                    f"Version bumped from {server_version_str} to {new_version_str}."
+                )
+                version.write(new_version_str)
+                version.flush()
+                sys.exit(1)
+    if errors:
+        for error in errors:
+            click.echo(error)
+        sys.exit(1)
+    click.echo("Versions ok.")
     sys.exit(0)
 
 

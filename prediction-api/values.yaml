@@ -10,9 +10,7 @@ api:
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: "latest"
-  environment:
-    - name: PRODUCTION_MODEL_ID
-      value: "squak-squak"
+  environment: []
 
 prediction:
   image:
@@ -20,9 +18,7 @@ prediction:
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: "latest"
-  environment:
-    - name: PREDICTION_API_MODEL_REPOSITORY_PATH
-      value: "/opt/ml/model/model.mlpkg"
+  environment: []
 
 imagePullSecrets: []
 nameOverride: ""
@@ -61,7 +57,7 @@ ingress:
   enabled: true
   className: ""
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: waterbowl-prediction-api-prediction-api-middleware@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: waterbowl-water-bowl-predictions-prediction-api-middleware@kubernetescrd
     traefik.ingress.kubernetes.io/cors-allow-methods: GET,POST
   hosts:
     - host: levan.home

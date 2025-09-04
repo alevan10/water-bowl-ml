@@ -3,8 +3,8 @@ import os
 
 import aiohttp
 from fastapi import APIRouter
-from utils.enums import PRODUCTION_MODEL_ID
-from werkzeug.exceptions import NotFound
+from models import PredictionRequest
+from utils.enums import PREDICTION_ENDPOINT
 
 prediction_router = APIRouter()
 
@@ -19,15 +19,17 @@ async def health_endpoint() -> str:
     return "pong"
 
 
-@prediction_router.get("/modelId")
-async def get_model_id():
-    return {"modelId": PRODUCTION_MODEL_ID}
-
-
 @prediction_router.get("/model")
 async def get_model_info():
     async with aiohttp.ClientSession() as session:
-        async with session.get("http://localhost:8080/info") as response:
-            if response.status == 200:
-                return await response.json()
-    raise NotFound("Prediction server not healthy")
+        async with session.get(f"{PREDICTION_ENDPOINT}/info") as response:
+            return await response.json()
+
+
+@prediction_router.post("/predict")
+async def predict(payload: PredictionRequest):
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            f"{PREDICTION_ENDPOINT}/predictions", json=payload.data
+        ) as response:
+            return await response.json()

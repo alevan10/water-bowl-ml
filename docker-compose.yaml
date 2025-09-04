@@ -5,48 +5,21 @@ services:
       context: .
       dockerfile: src/docker/prediction_api.Dockerfile
     environment:
-      MONGO_PASSWORD: ${MONGO_PASSWORD:-robo_ruthie}
-      MONGO_USER: ${MONGO_USER:-robo_ruthie}
-      MONGO_URL: ${MONGO_URL:-mongo:27017}
-      MONGO_DATABASE: ${MONGO_DB:-test_waterbowl}
-      MODELS_COLLECTION: ${MODELS_COLLECTION:-test_models}
+      PREDICTION_ENDPOINT: "http://prediction-server:8080"
     ports:
-      - "8000:80"
+      - "8082:8082"
     depends_on:
-      - postgres
-      - water-bowl-api
-      - mongo
       - prediction-server
   prediction-server:
-    image: "levan.home:5000/datarobot/datarobot-portable-prediction-api:latest"
+    image: "levan.home:5000/waterbowl/prediction-server:latest"
     ports:
-      - "8080:8081"
-    volumes:
-      - /Users/alsok/workspace/water-bowl-ml/model_65f73bcadfa2eef464dcd0bc.mlpkg:/opt/ml/model/
+      - "8080:8080"
     environment:
-      PREDICTION_API_MODEL_REPOSITORY_PATH: "/opt/ml/model/model_65f73bcadfa2eef464dcd0bc.mlpkg"
-  water-bowl-api:
-    image: "levan.home:5000/water-bowl-api:latest"
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_ADDRESS: "postgres:5432"
-    ports:
-      - "8080:80"
-    depends_on:
-      - postgres
-  postgres:
-    image: "postgres:14.3"
-    environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-    ports:
-      - "5432:5432"
-  mongo:
-    image: "mongo:5.0.3"
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-robo_ruthie}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-robo_ruthie}
-      MONGO_INITDB_DATABASE: ${MONGO_DB:-test_waterbowl}
+      PREDICTION_API_MODEL_REPOSITORY_PATH: "/opt/ml/model/model.mlpkg"
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]

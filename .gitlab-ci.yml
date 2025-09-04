@@ -29,6 +29,7 @@ before_script:
   - apt-get update && apt-get install -y libhdf5-dev
   - pip install --upgrade pip setuptools wheel
   - pip install -r requirements.txt
+  - pip install -r tests/test-requirements.txt
   - export PYTHONPATH="$(pwd)/src:$(pwd)/src/prediction_api:$(pwd)/modeling_engine:$PYTHONPATH"
 
 stages:
@@ -46,18 +47,68 @@ Pylint:
     - pip install -r requirements-cuda.txt
     - nvidia-smi
     - make lint
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        compare_to: 'refs/heads/main'
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/**/*.py'
+          - 'modeling_engine/**/*.py'
+          - 'tests/**/*.py'
+    - if: $CI_COMMIT_REF_NAME == "main"
+      changes:
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/**/*.py'
+          - 'modeling_engine/**/*.py'
+          - 'tests/**/*.py'
 
 Black:
   stage: Static Analysis
   retry: 1
   script:
     - make check-black
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        compare_to: 'refs/heads/main'
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/**/*.py'
+          - 'modeling_engine/**/*.py'
+          - 'tests/**/*.py'
+    - if: $CI_COMMIT_REF_NAME == "main"
+      changes:
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/**/*.py'
+          - 'modeling_engine/**/*.py'
+          - 'tests/**/*.py'
 
 Version_Check:
   stage: Static Analysis
   retry: 1
   script:
     - python version_checker.py
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        compare_to: 'refs/heads/main'
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/**/*.py'
+          - 'modeling_engine/**/*.py'
+          - 'tests/**/*.py'
+          - "MODEL_PACKAGE"
+    - if: $CI_COMMIT_REF_NAME == "main"
+      changes:
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/**/*.py'
+          - 'modeling_engine/**/*.py'
+          - 'tests/**/*.py'
+          - "MODEL_PACKAGE"
 
 Lint_Dockerfile:
   stage: Static Analysis
@@ -66,12 +117,49 @@ Lint_Dockerfile:
   image: hadolint/hadolint:latest-debian
   script:
     - hadolint src/docker/prediction_api.Dockerfile
+    - hadolint src/docker/prediction_server.Dockerfile
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        compare_to: 'refs/heads/main'
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/**/*.py'
+          - 'modeling_engine/**/*.py'
+          - 'tests/**/*.py'
+          - 'src/**/*.Dockerfile'
+    - if: $CI_COMMIT_REF_NAME == "main"
+      changes:
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/**/*.py'
+          - 'modeling_engine/**/*.py'
+          - 'tests/**/*.py'
+          - 'src/**/*.Dockerfile'
 
 Isort:
   stage: Static Analysis
   retry: 1
   script:
     - make check-isort
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        compare_to: 'refs/heads/main'
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/**/*.py'
+          - 'modeling_engine/**/*.py'
+          - 'tests/**/*.py'
+          - "*.py"
+    - if: $CI_COMMIT_REF_NAME == "main"
+      changes:
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/**/*.py'
+          - 'modeling_engine/**/*.py'
+          - 'tests/**/*.py'
+          - "*.py"
 
 Unit:
   stage: Tests
@@ -82,37 +170,129 @@ Unit:
     - pip install -r requirements-cuda.txt
     - nvidia-smi
     - pytest -v ./tests/unit
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        compare_to: 'refs/heads/main'
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/**/*.py'
+          - 'modeling_engine/**/*.py'
+          - 'tests/**/*.py'
+    - if: $CI_COMMIT_REF_NAME == "main"
+      changes:
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/**/*.py'
+          - 'modeling_engine/**/*.py'
+          - 'tests/**/*.py'
 
-
-#Integration:
-#  stage: Tests
-#  retry: 1
-#  services:
-#    - name: postgres:14.3
-#      alias: postgres
-#      variables:
-#        POSTGRES_ADDRESS: "postgres:5432"
-#        POSTGRES_DATABASE: "postgres"
-#        POSTGRES_USER: "postgres"
-#        POSTGRES_PASSWORD: "postgres"
-#  script:
-#    - pytest -v ./tests/integration
-
-Build-x64:
-  stage: Build
+Build-Test-Server:
+  stage: Tests
   retry: 1
   tags:
     - x64
-  only:
-    - main
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        compare_to: 'refs/heads/main'
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/docker/prediction_server.Dockerfile'
+          - 'MODEL_PACKAGE'
+          - 'SERVER_VERSION'
+      when: on_success
+    - if: $CI_COMMIT_REF_NAME == "main"
+      when: on_success
+      changes:
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/docker/prediction_server.Dockerfile'
+          - 'MODEL_PACKAGE'
+          - 'SERVER_VERSION'
   image:
     name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
-  before_script: []
+    entrypoint: [ "" ]
+  before_script: [ ]
   script:
     - MODEL_PACKAGE=$(cat MODEL_PACKAGE)
-    - PREDICTION_API_VERSION=$(cat API_VERSION)
-    - PREDICTION_SERVER_VERSION=$(cat SERVER_VERSION)
+    - mkdir -p /kaniko/.docker
+    - >-
+      /kaniko/executor
+      --insecure-registry levan.home:5000
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
+      --destination "levan.home:5000/waterbowl/prediction-server:${CI_COMMIT_SHORT_SHA}"
+      --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
+      --cleanup
+
+
+Rename-Test-Server:
+  stage: Tests
+  retry: 1
+  tags:
+    - x64
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        compare_to: 'refs/heads/main'
+        paths:
+            - '.gitlab-ci.yml'
+            - 'src/docker/prediction_server.Dockerfile'
+            - 'MODEL_PACKAGE'
+            - 'SERVER_VERSION'
+      when: never
+    - if: $CI_COMMIT_REF_NAME == "main"
+      when: on_success
+      changes:
+        paths:
+          - 'src/docker/prediction_server.Dockerfile'
+          - 'MODEL_PACKAGE'
+          - 'SERVER_VERSION'
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [ "" ]
+  before_script: [ ]
+  script:
+    - mkdir -p /kaniko/.docker
+    - >-
+      echo "FROM  levan.home:5000/waterbowl/prediction-server:latest" | 
+      /kaniko/executor 
+      --context "${CI_PROJECT_DIR}"
+      --insecure-registry levan.home:5000 
+      --dockerfile /dev/stdin 
+      --destination levan.home:5000/waterbowl/prediction-server:${CI_COMMIT_SHORT_SHA} 
+      --cleanup
+
+
+Build-Test-API:
+  stage: Tests
+  retry: 1
+  tags:
+    - x64
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        compare_to: 'refs/heads/main'
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/docker/prediction_api.Dockerfile'
+          - 'src/**/*'
+          - 'API_VERSION'
+      when: on_success
+    - if: $CI_COMMIT_REF_NAME == "main"
+      when: on_success
+      changes:
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/docker/prediction_api.Dockerfile'
+          - 'src/**/*'
+          - 'API_VERSION'
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [ "" ]
+  before_script: [ ]
+  script:
     - mkdir -p /kaniko/.docker
     - >-
       /kaniko/executor
@@ -120,41 +300,168 @@ Build-x64:
       --skip-tls-verify
       --context "${CI_PROJECT_DIR}"
       --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
-      --destination "levan.home:5000/waterbowl/prediction-api:${PREDICTION_API_VERSION}"
+      --destination "levan.home:5000/waterbowl/prediction-api:${CI_COMMIT_SHORT_SHA}"
+      --cleanup
+
+
+Rename-Test-API:
+  stage: Tests
+  retry: 1
+  tags:
+    - x64
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        compare_to: 'refs/heads/main'
+        paths:
+          - '.gitlab-ci.yml'
+          - 'src/docker/prediction_api.Dockerfile'
+          - 'src/**/*'
+          - 'API_VERSION'
+      when: never
+    - if: $CI_COMMIT_REF_NAME == "main"
+      when: on_success
+      changes:
+        paths:
+          - 'src/docker/prediction_api.Dockerfile'
+          - 'src/**/*'
+          - 'API_VERSION'
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [ "" ]
+  before_script: [ ]
+  script:
+    - mkdir -p /kaniko/.docker
+    - >-
+      echo "FROM  levan.home:5000/waterbowl/prediction-api:latest" | 
+      /kaniko/executor 
+      --context "${CI_PROJECT_DIR}"
+      --insecure-registry levan.home:5000 
+      --dockerfile /dev/stdin 
+      --destination levan.home:5000/waterbowl/prediction-api:${CI_COMMIT_SHORT_SHA} 
+      --cleanup
+
+
+Integration:
+  stage: Tests
+  retry: 1
+  rules:
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        compare_to: 'refs/heads/main'
+        paths:
+          - '.gitlab-ci.yml'
+          - "src/**/*"
+          - "tests/**/*"
+          - "src/**/*.Dockerfile"
+    - if: $CI_COMMIT_REF_NAME == "main"
+      when: on_success
+      changes:
+        paths:
+          - '.gitlab-ci.yml'
+          - "src/**/*"
+          - "tests/**/*"
+          - "src/**/*.Dockerfile"
+  tags:
+    - x64
+  timeout: 1h
+  needs:
+    - job: Build-Test-Server
+      optional: true
+    - job: Build-Test-API
+      optional: true
+    - job: Rename-Test-Server
+      optional: true
+    - job: Rename-Test-API
+      optional: true
+  services:
+    - name: levan.home:5000/waterbowl/prediction-server:${CI_COMMIT_SHORT_SHA}
+      alias: prediction-server
+    - name: levan.home:5000/waterbowl/prediction-api:${CI_COMMIT_SHORT_SHA}
+      alias: prediction-api
+      variables:
+        PREDICTION_ENDPOINT: "http://prediction-server:8080"
+  before_script:
+    - pip install -r requirements.txt
+    - pip install -r requirements-cuda.txt
+    - pip install -r tests/test-requirements.txt
+  script:
+    - export API_ENDPOINT="http://prediction-api:8082"
+    - pytest -v ./tests/integration
+
+Push-Production-Server:
+  stage: Build
+  retry: 1
+  tags:
+    - x64
+  rules:
+    - if: $CI_COMMIT_REF_NAME == "main"
+      when: on_success
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script: []
+  script:
+    - PREDICTION_SERVER_VERSION=$(cat SERVER_VERSION)
+    - mkdir -p /kaniko/.docker
+    - >-
+      echo "FROM  levan.home:5000/waterbowl/prediction-server:${CI_COMMIT_SHORT_SHA}" | 
+      /kaniko/executor 
+      --context "${CI_PROJECT_DIR}"
+      --insecure-registry levan.home:5000 
+      --dockerfile /dev/stdin 
+      --destination levan.home:5000/waterbowl/prediction-server:${PREDICTION_SERVER_VERSION} 
       --cleanup
     - >-
-      /kaniko/executor
-      --insecure-registry levan.home:5000
+      echo "FROM  levan.home:5000/waterbowl/prediction-server:${CI_COMMIT_SHORT_SHA}" | 
+      /kaniko/executor 
       --context "${CI_PROJECT_DIR}"
-      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
-      --destination "levan.home:5000/waterbowl/prediction-server:${PREDICTION_SERVER_VERSION}"
-      --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
+      --insecure-registry levan.home:5000 
+      --dockerfile /dev/stdin 
+      --destination levan.home:5000/waterbowl/prediction-server:latest
+      --cleanup
+
+Push-Production-API:
+  stage: Build
+  retry: 1
+  tags:
+    - x64
+  rules:
+    - if: $CI_COMMIT_REF_NAME == "main"
+      when: on_success
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script: []
+  script:
+    - PREDICTION_API_VERSION=$(cat API_VERSION)
+    - mkdir -p /kaniko/.docker
+    - >-
+      echo "FROM levan.home:5000/waterbowl/prediction-api:${CI_COMMIT_SHORT_SHA}" | 
+      /kaniko/executor 
+      --context "${CI_PROJECT_DIR}"
+      --insecure-registry levan.home:5000 
+      --dockerfile /dev/stdin 
+      --destination levan.home:5000/waterbowl/prediction-api:${PREDICTION_API_VERSION} 
       --cleanup
     - >-
-      /kaniko/executor
-      --insecure-registry levan.home:5000
+      echo "FROM levan.home:5000/waterbowl/prediction-api:${CI_COMMIT_SHORT_SHA}" | 
+      /kaniko/executor 
       --context "${CI_PROJECT_DIR}"
-      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_api.Dockerfile"
-      --destination "levan.home:5000/waterbowl/prediction-api:latest"
-      --cleanup
-    - >-
-      /kaniko/executor
-      --insecure-registry levan.home:5000
-      --context "${CI_PROJECT_DIR}"
-      --dockerfile "${CI_PROJECT_DIR}/src/docker/prediction_server.Dockerfile"
-      --destination "levan.home:5000/waterbowl/prediction-server:latest"
-      --build-arg MODEL_PACKAGE=${MODEL_PACKAGE}
+      --insecure-registry levan.home:5000 
+      --dockerfile /dev/stdin 
+      --destination levan.home:5000/waterbowl/prediction-api:latest
       --cleanup
 
 Deploy:
   stage: Deploy
   retry: 1
-  only:
-    - main
+  rules:
+    - if: $CI_COMMIT_REF_NAME == "main"
+      when: on_success
   image: alpine/helm:3.10.2
   before_script: []
   script:
     - PREDICTION_API_VERSION=$(cat API_VERSION)
     - PREDICTION_SERVER_VERSION=$(cat SERVER_VERSION)
-    - PRODUCTION_MODEL_ID=$(cat MODEL_PACKAGE | sed -E 's/model_([^\.]*).mlpkg|$/\1/')
-    - helm upgrade --install water-bowl-predictions ./prediction-api --values=./prediction-api/values.yaml --namespace waterbowl --create-namespace --set api.image.tag=${PREDICTION_API_VERSION} --set prediction.image.tag=${PREDICTION_SERVER_VERSION} --set "api.environment[0].value=${PRODUCTION_MODEL_ID}"
+    - helm upgrade --install water-bowl-predictions ./prediction-api --values=./prediction-api/values.yaml --namespace waterbowl --create-namespace --set api.image.tag=${PREDICTION_API_VERSION} --set prediction.image.tag=${PREDICTION_SERVER_VERSION}
